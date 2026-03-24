@@ -13,7 +13,7 @@ class InitResult {
   const InitResult({
     required this.configPath,
     required this.created,
-    this.overwritten = false, // FIX: added missing field
+    this.overwritten = false, 
   });
 
   final String configPath;
@@ -31,23 +31,20 @@ class ConfigService {
     final apidashDirectory = Directory('${cwd.path}/$kApidashFolderName');
     final configFile = File('${apidashDirectory.path}/$kApidashConfigFileName');
 
-    // Use current directory name if project name is null
-    projectName ??= cwd.uri.pathSegments.lastWhere((s) => s.isNotEmpty, orElse: () => 'my-project');
+    projectName ??= cwd.uri.pathSegments
+        .lastWhere((s) => s.isNotEmpty, orElse: () => 'my-project');
 
-    // FIX: check if config already exists and respect the force flag
     final alreadyExists = await configFile.exists();
     if (alreadyExists && !force) {
       return InitResult(
         configPath: configFile.path,
-        created: false,        // blocked — nothing written
+        created: false, 
         overwritten: false,
       );
     }
 
-    // FIX: create the .apidash directory (recursive in case cwd doesn't exist)
     await apidashDirectory.create(recursive: true);
 
-    // FIX: scaffold all subdirectories defined in constants
     final subDirectories = [
       kApidashCollectionPath,
       kApidashEnvironmentPath,
@@ -60,10 +57,9 @@ class ConfigService {
       await dir.create(recursive: true);
     }
 
-    // FIX: build and write actual config content to config.json
     final configContent = {
       'version': kApidashConfigVersion,
-     'projectName': projectName,
+      'projectName': projectName,
       'createdAt': DateTime.now().toIso8601String(),
       'paths': {
         'collections': kApidashCollectionPath,
@@ -80,7 +76,7 @@ class ConfigService {
     return InitResult(
       configPath: configFile.path,
       created: true,
-      overwritten: alreadyExists, // true only if we stomped an existing config
+      overwritten: alreadyExists, 
     );
   }
 }

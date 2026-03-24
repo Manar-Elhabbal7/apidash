@@ -12,7 +12,9 @@ class HttpService {
     dynamic body,
   }) async {
     final uri = Uri.parse(url);
-    final Map<String, String> mappedHeaders = {for (var h in headers ?? []) h.name: h.value};
+    final Map<String, String> mappedHeaders = {
+      for (var h in headers ?? []) h.name: h.value
+    };
 
     http.Response response;
     switch (method) {
@@ -33,7 +35,6 @@ class HttpService {
         break;
     }
 
-    // Try to parse body if it's JSON
     dynamic parsedBody = response.body;
     try {
       parsedBody = jsonDecode(response.body);

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:hive_ce/hive_ce.dart';
+
 const String kHistoryMetaBox = "apidash-history-meta";
 const String kHistoryLazyBox = "apidash-history-lazy";
 const String kHistoryBoxIds = "historyIds";
@@ -10,7 +12,6 @@ class HiveHandler {
 
   Future<void> initWorkspaceStore(String path) async {
     if (_initialized) return;
-
     Hive.init(path);
     _metaBox = await Hive.openBox(kHistoryMetaBox);
     _lazyBox = await Hive.openLazyBox(kHistoryLazyBox);
@@ -26,35 +27,43 @@ class HiveHandler {
   }
 
   Future<void> setRequestModel(String id, Map<String, dynamic> json) async {
-    await _lazyBox.put(id, json);
+  await _lazyBox.put(id, json);
+  final List<String> ids = getIds() ?? [];
+  
+  ids.removeWhere((e) => e == id);
+  ids.insert(0, id);
+  
+  await _metaBox.put(kHistoryBoxIds, jsonEncode(ids));
+}
 
-    final rawIds = _metaBox.get(kHistoryBoxIds) as List?;
-    final List<String> ids = rawIds?.map((e) => e.toString()).toList() ?? [];
-    if (!ids.contains(id)) {
-      ids.insert(0, id);
-      await _metaBox.put(kHistoryBoxIds, ids);
-    }
-  }
-
-  Future<Map<String,dynamic>?> getRequestModel(String id) async {
+  Future<Map<String, dynamic>?> getRequestModel(String id) async {
     final json = await _lazyBox.get(id);
     if (json == null) return null;
-    return Map<String,dynamic>.from(json as Map<dynamic, dynamic>);
+    return Map<String, dynamic>.from(json as Map<dynamic, dynamic>);
   }
 
   Future<void> delete(String id) async {
     await _lazyBox.delete(id);
-    final List<String> ids = (_metaBox.get(kHistoryBoxIds) as List?)?.cast<String>() ?? [];
-    ids.remove(id);
-    await _metaBox.put(kHistoryBoxIds, ids);
+    final List<String> ids = getIds() ?? [];
+    ids.removeWhere((e) => e == id);
+    await _metaBox.put(kHistoryBoxIds, jsonEncode(ids));
   }
 
   Future<void> setIds(List<String> ids) async {
-    await _metaBox.put(kHistoryBoxIds, ids);
+    await _metaBox.put(kHistoryBoxIds, jsonEncode(ids));
   }
 
   List<String>? getIds() {
-    return (_metaBox.get(kHistoryBoxIds) as List?)?.cast<String>();
+    final raw = _metaBox.get(kHistoryBoxIds);
+    if (raw == null) return null;
+    List<String> ids;
+    if (raw is String) {
+      ids = (jsonDecode(raw) as List).map((e) => e.toString()).toList();
+    } else {
+      // handle old List format before the fix
+      ids = (raw as List).map((e) => e.toString()).toList();
+    }
+    return ids.toSet().toList();
   }
 }
 

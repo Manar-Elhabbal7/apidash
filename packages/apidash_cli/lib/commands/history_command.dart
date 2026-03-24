@@ -1,4 +1,3 @@
-import 'package:apidash_cli/models/request_model.dart';
 import 'package:apidash_cli/services/hive_cli_services.dart';
 import '../cli/base_command.dart';
 
@@ -6,7 +5,7 @@ class HistoryCommand extends BaseCommand {
   HistoryCommand() {
     argParser
       ..addOption('workspace', abbr: 'w', help: 'Path to API Dash workspace')
-      ..addOption('limit', abbr: 'l', help: 'Limit number of history items to show')
+      ..addOption('limit', abbr: 'l', help: 'Limit the number of history items')
       ..addFlag('clear', help: 'Clear all request history', negatable: false)
       ..addOption('delete', help: 'Delete a specific request by ID');
   }
@@ -15,73 +14,54 @@ class HistoryCommand extends BaseCommand {
   String get name => 'history';
 
   @override
-  String get description => 'Manage and view request history';
+  String get description => 'Manage request history';
 
   @override
   Future<int> run() async {
     final workspace = argResults!['workspace'] as String? ?? '.apidash';
+    final limit = int.tryParse(argResults!['limit'] as String? ?? '');
+    final clear = argResults!['clear'] as bool;
+    final deleteId = argResults!['delete'] as String?;
+
     await hiveHandler.initWorkspaceStore(workspace);
 
-    // Clear history if --clear flag is provided
-    if (argResults!['clear'] == true) {
-      await hiveHandler.setIds([]);
+    // Clean up duplicate IDs in index if any
+    final ids = hiveHandler.getIds() ?? [];
+    final uniqueIds = ids.toSet().toList();
+    if (ids.length != uniqueIds.length) {
+      await hiveHandler.setIds(uniqueIds);
+    }
+
+    if (clear) {
+      for (var id in uniqueIds) {
+        await hiveHandler.delete(id);
+      }
       success('History cleared');
       return 0;
     }
 
-    // Delete a specific request by ID
-    final deleteId = argResults!['delete'] as String?;
     if (deleteId != null) {
-      await hiveHandler.delete(deleteId);
-      success('Deleted request $deleteId from history');
+      if (uniqueIds.contains(deleteId)) {
+        await hiveHandler.delete(deleteId);
+        success('Request $deleteId deleted');
+      } else {
+        error('Request $deleteId not found');
+      }
       return 0;
     }
 
-    // Get IDs from Hive
-    final ids = hiveHandler.getIds();
-    if (ids == null || ids.isEmpty) {
+    final displayIds = limit != null ? uniqueIds.take(limit) : uniqueIds;
+
+    if (displayIds.isEmpty) {
       info('No history found');
       return 0;
     }
 
-    // Deduplicate by URL + method instead of just ID
-    final seen = <String>{}; // Set to track unique requests
-    final uniqueIds = <String>[]; // List to store deduplicated IDs
-
-    for (var id in ids) {
-      final json = await hiveHandler.getRequestModel(id);
-      if (json != null) {
-        final key = '${json['method']}-${json['url']}';
-        if (!seen.contains(key)) {
-          seen.add(key);
-          uniqueIds.add(id);
-        }
-      }
-    }
-
-    // Update Hive IDs after removing duplicates
-    await hiveHandler.setIds(uniqueIds);
-
-    // Limit number of items to display
-    var limitStr = argResults!['limit'] as String?;
-    int limit = limitStr != null ? int.tryParse(limitStr) ?? uniqueIds.length : uniqueIds.length;
-    final displayIds = uniqueIds.take(limit).toList();
-
-    info('Showing last ${displayIds.length} requests:');
-    print('-' * 40);
-
-    // Display request history
+    info('Recent Requests:');
     for (var id in displayIds) {
       final json = await hiveHandler.getRequestModel(id);
       if (json != null) {
-        final request = RequestModel.fromJson(json);
-        print('[${request.method.name.toUpperCase()}] ${request.name}');
-        print('URL: ${request.url}');
-        print('ID:  ${request.id}');
-        if (request.response != null) {
-           print('Res: ${request.response!.statusCode}');
-        }
-        print('-' * 40);
+        print('[$id] ${json['method']} ${json['url']}');
       }
     }
 

@@ -22,7 +22,8 @@ class RequestModel {
     this.response,
   });
 
-  RequestModel copyWith({String? url, RequestMethod? method, ResponseModel? response}) {
+  RequestModel copyWith(
+      {String? url, RequestMethod? method, ResponseModel? response}) {
     return RequestModel(
       id: id,
       name: name,
@@ -35,24 +36,30 @@ class RequestModel {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'url': url,
-    'method': method.name,
-    'headers': headers.map((e) => e.toJson()).toList(),
-    'body': body,
-    'response': response?.toJson(),
-  };
+        'id': id,
+        'name': name,
+        'url': url,
+        'method': method.name,
+        'headers': headers.map((e) => e.toJson()).toList(),
+        'body': body,
+        'response': response?.toJson(),
+      };
 
-  factory RequestModel.fromJson(Map<String,dynamic> json) => RequestModel(
-    id: json['id'],
-    name: json['name'],
-    url: json['url'],
-    method: RequestMethod.values.firstWhere((e) => e.name == json['method']),
-    headers: (json['headers'] as List<dynamic>?)
-        ?.map((e) => NameValueModel.fromJson(Map<String,dynamic>.from(e)))
-        .toList() ?? [],
-    body: json['body'],
-    response: json['response'] != null ? ResponseModel.fromJson(Map<String,dynamic>.from(json['response'])) : null,
-  );
+  factory RequestModel.fromJson(Map<String, dynamic> json) => RequestModel(
+        id: json['id'],
+        name: json['name'],
+        url: json['url'],
+        method:
+            RequestMethod.values.firstWhere((e) => e.name == json['method']),
+        headers: (json['headers'] as List<dynamic>?)
+                ?.map((e) =>
+                    NameValueModel.fromJson(Map<String, dynamic>.from(e)))
+                .toList() ??
+            [],
+        body: json['body'],
+        response: json['response'] != null
+            ? ResponseModel.fromJson(
+                Map<String, dynamic>.from(json['response']))
+            : null,
+      );
 }

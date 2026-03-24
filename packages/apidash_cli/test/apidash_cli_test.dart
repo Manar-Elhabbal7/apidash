@@ -31,16 +31,17 @@ void main() {
     });
 
     await hiveHandler.initWorkspaceStore(tempDir.path);
-    
+
     final id = 'test_id';
     final data = {'id': id, 'name': 'test'};
-    
+
     await hiveHandler.setRequestModel(id, data);
     expect(hiveHandler.getIds(), contains(id));
     expect(hiveHandler.getIds()!.length, 1);
-    
+
     // Call it again with same ID
     await hiveHandler.setRequestModel(id, data);
-    expect(hiveHandler.getIds()!.length, 1, reason: 'ID should not be duplicated');
+    expect(hiveHandler.getIds()!.length, 1,
+        reason: 'ID should not be duplicated');
   });
 }

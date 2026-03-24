@@ -42,8 +42,6 @@ class InitCommand extends BaseCommand {
       final result = await _configService.initProject(
         projectName: projectName?.trim(),
         force: force,
-
-       
       );
 
       // Config already exists and --force was not passed
@@ -61,9 +59,8 @@ class InitCommand extends BaseCommand {
       }
 
       // Optionally print where the config was written
-     
+
       info('Config written to: ${result.configPath}');
-      
 
       return 0;
     } catch (e, stackTrace) {

@@ -59,6 +59,18 @@ class RequestCommand extends BaseCommand {
       }
     }
 
+    // Initialize Hive and find existing ID BEFORE sending the request
+    await hiveHandler.initWorkspaceStore(workspace);
+    final currentIds = (hiveHandler.getIds() ?? []).toSet().toList();
+    String? existingId;
+    for (var id in currentIds) {
+      final json = await hiveHandler.getRequestModel(id);
+      if (json != null && json['url'] == url && json['method'] == method.name) {
+        existingId = id;
+        break;
+      }
+    }
+
     final httpService = HttpService();
     final start = DateTime.now();
 
@@ -86,14 +98,8 @@ class RequestCommand extends BaseCommand {
         print(response.body);
       }
 
-      // Initialize Hive workspace
-      await hiveHandler.initWorkspaceStore(workspace);
-
-      // Get current IDs
-      final currentIds = (hiveHandler.getIds() as List?)?.cast<String>() ?? [];
-
-      // Save request with new UUID
-      final requestId = const Uuid().v4();
+      // Use existing ID if found, otherwise generate a new one
+      final requestId = existingId ?? const Uuid().v4();
       final requestModel = RequestModel(
         id: requestId,
         name: name,
@@ -105,19 +111,6 @@ class RequestCommand extends BaseCommand {
       );
 
       await hiveHandler.setRequestModel(requestId, requestModel.toJson());
-
-      // Add to IDs if not already present (avoid duplicates)
-      // Instead of checking only the UUID, check method + URL to prevent multiple entries of the same request
-      final exists = currentIds.any((id) async {
-        final json = await hiveHandler.getRequestModel(id);
-        if (json == null) return false;
-        return json['url'] == url && json['method'] == method.name;
-      } as bool Function(String element));
-
-      if (!exists) {
-        await hiveHandler.setIds([...currentIds, requestId]);
-      }
-
       success('Saved to history');
       return 0;
     } catch (e) {
