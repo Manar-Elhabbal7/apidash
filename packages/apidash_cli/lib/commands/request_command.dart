@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:uuid/uuid.dart';
 import 'package:apidash_cli/models/name_value_model.dart';
 import 'package:apidash_cli/models/request_model.dart';
@@ -84,18 +85,62 @@ class RequestCommand extends BaseCommand {
       );
       final duration = DateTime.now().difference(start);
 
-      // Print output
-      if (outputFormat == 'json') {
+      // Check for media types
+      final contentType = response.headers
+          ?.firstWhere(
+            (h) => h.name.toLowerCase() == 'content-type',
+            orElse: () => NameValueModel(name: '', value: ''),
+          )
+          .value
+          .toLowerCase();
+
+      final isMedia = contentType != null &&
+          contentType.isNotEmpty &&
+          (contentType.contains('image/') ||
+              contentType.contains('video/') ||
+              contentType.contains('audio/') ||
+              contentType.contains('application/pdf'));
+
+      if (isMedia) {
+        final extension = contentType.contains('application/pdf')
+            ? 'pdf'
+            : contentType.split('/').last.split(';').first;
+        final tempFile = File(
+            '${Directory.systemTemp.path}/apidash_${DateTime.now().millisecondsSinceEpoch}.$extension');
+        await tempFile.writeAsBytes(response.bodyBytes!);
+
+        // Print JSON status and info
         const encoder = JsonEncoder.withIndent('  ');
         print(encoder.convert({
           'status': response.statusCode,
-          'headers': response.headers?.map((e) => e.toJson()).toList(),
-          'body': response.body,
-          'duration_ms': duration.inMilliseconds,
+          'content-type': contentType,
+          'message': 'Media detected, opening in external viewer...',
+          'temp_file': tempFile.path,
         }));
+
+        // Open file
+        if (Platform.isLinux) {
+          await Process.run('xdg-open', [tempFile.path]);
+        } else if (Platform.isMacOS) {
+          await Process.run('open', [tempFile.path]);
+        } else if (Platform.isWindows) {
+          await Process.run('start', [tempFile.path], runInShell: true);
+        }
       } else {
-        info('Response: ${response.statusCode} in ${duration.inMilliseconds}ms');
-        print(response.body);
+        // Print output as usual
+        if (outputFormat == 'json') {
+          const encoder = JsonEncoder.withIndent('  ');
+          print(encoder.convert({
+            'status': response.statusCode,
+            'headers': response.headers?.map((e) => e.toJson()).toList(),
+            'body': response.body,
+            'duration_ms': duration.inMilliseconds,
+          }));
+        } else {
+          info(
+              'Response: ${response.statusCode} in ${duration.inMilliseconds}ms');
+          print(response.body);
+        }
       }
 
       // Use existing ID if found, otherwise generate a new one

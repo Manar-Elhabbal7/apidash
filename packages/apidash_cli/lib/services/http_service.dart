@@ -43,6 +43,7 @@ class HttpService {
     return ResponseModel(
       statusCode: response.statusCode,
       body: parsedBody,
+      bodyBytes: response.bodyBytes,
       headers: response.headers.entries
           .map((e) => local.NameValueModel(name: e.key, value: e.value))
           .toList(),
