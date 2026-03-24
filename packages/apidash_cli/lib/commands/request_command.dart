@@ -1,0 +1,128 @@
+import 'dart:convert';
+import 'package:uuid/uuid.dart';
+import 'package:apidash_cli/models/name_value_model.dart';
+import 'package:apidash_cli/models/request_model.dart';
+import 'package:apidash_cli/services/hive_cli_services.dart';
+import 'package:apidash_cli/services/http_service.dart';
+import '../cli/base_command.dart';
+
+class RequestCommand extends BaseCommand {
+  RequestCommand() {
+    argParser
+      ..addOption('workspace', abbr: 'w', help: 'Path to API Dash workspace')
+      ..addOption('output', abbr: 'o', defaultsTo: 'human', help: 'Output format: human or json')
+      ..addOption('name', help: 'Custom name for the request in history')
+      ..addOption('body', help: 'Request body for POST/PUT/PATCH')
+      ..addMultiOption('header', abbr: 'H', help: 'Add header (can be used multiple times)');
+  }
+
+  @override
+  String get name => 'request';
+
+  @override
+  String get description => 'Execute HTTP request and save to history';
+
+  @override
+  Future<int> run() async {
+    final args = argResults!.rest;
+    if (args.length < 2) {
+      info('Usage: apidash request <METHOD> <URL>');
+      return 1;
+    }
+
+    final methodStr = args[0].toLowerCase();
+    final url = args[1];
+    final workspace = argResults!['workspace'] as String? ?? '.apidash';
+    final outputFormat = argResults!['output'] as String;
+    final name = argResults!['name'] as String? ?? url;
+    final body = argResults!['body'] as String?;
+    final headersArgs = argResults!['header'] as List<String>? ?? [];
+
+    // Parse HTTP method
+    RequestMethod method;
+    try {
+      method = RequestMethod.values.firstWhere((v) => v.name == methodStr);
+    } catch (_) {
+      error('Invalid HTTP method: $methodStr');
+      return 1;
+    }
+
+    // Prepare headers
+    final headers = <NameValueModel>[];
+    for (var h in headersArgs) {
+      final parts = h.split(':');
+      if (parts.length >= 2) {
+        headers.add(NameValueModel(
+          name: parts[0].trim(),
+          value: parts.sublist(1).join(':').trim(),
+        ));
+      }
+    }
+
+    final httpService = HttpService();
+    final start = DateTime.now();
+
+    try {
+      // Execute request
+      final response = await httpService.sendRequest(
+        method: method,
+        url: url,
+        headers: headers,
+        body: body,
+      );
+      final duration = DateTime.now().difference(start);
+
+      // Print output
+      if (outputFormat == 'json') {
+        const encoder = JsonEncoder.withIndent('  ');
+        print(encoder.convert({
+          'status': response.statusCode,
+          'headers': response.headers?.map((e) => e.toJson()).toList(),
+          'body': response.body,
+          'duration_ms': duration.inMilliseconds,
+        }));
+      } else {
+        info('Response: ${response.statusCode} in ${duration.inMilliseconds}ms');
+        print(response.body);
+      }
+
+      // Initialize Hive workspace
+      await hiveHandler.initWorkspaceStore(workspace);
+
+      // Get current IDs
+      final currentIds = (hiveHandler.getIds() as List?)?.cast<String>() ?? [];
+
+      // Save request with new UUID
+      final requestId = const Uuid().v4();
+      final requestModel = RequestModel(
+        id: requestId,
+        name: name,
+        url: url,
+        method: method,
+        headers: headers,
+        body: body,
+        response: response,
+      );
+
+      await hiveHandler.setRequestModel(requestId, requestModel.toJson());
+
+      // Add to IDs if not already present (avoid duplicates)
+      // Instead of checking only the UUID, check method + URL to prevent multiple entries of the same request
+      final exists = currentIds.any((id) async {
+        final json = await hiveHandler.getRequestModel(id);
+        if (json == null) return false;
+        return json['url'] == url && json['method'] == method.name;
+      } as bool Function(String element));
+
+      if (!exists) {
+        await hiveHandler.setIds([...currentIds, requestId]);
+      }
+
+      success('Saved to history');
+      return 0;
+    } catch (e) {
+      error('Failed to execute request: $e');
+      return 1;
+    }
+  }
+}
