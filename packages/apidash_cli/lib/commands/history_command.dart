@@ -3,11 +3,12 @@ import '../cli/base_command.dart';
 
 class HistoryCommand extends BaseCommand {
   HistoryCommand() {
-    //TODO - add option to export history to a file
-    //TODO - The history should be sync with the GUI    
-    
+    //TODO:- add option to export history to a file
+    //TODO:- The history should be sync with the GUI (will be disucss with the mentor)
+
     argParser
-      ..addOption('workspace', abbr: 'w', help: 'specify a workspace (defaults to .apidash)')
+      ..addOption('workspace',
+          abbr: 'w', help: 'specify a workspace (defaults to .apidash)')
       ..addOption('limit', abbr: 'l', help: 'show only the last n requests')
       ..addFlag('clear', help: 'clear all the history', negatable: false)
       ..addOption('delete', help: 'Delete a request by id');

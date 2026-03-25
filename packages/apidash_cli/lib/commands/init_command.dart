@@ -45,7 +45,7 @@ class InitCommand extends BaseCommand {
       if (!result.created) {
         info('Configuration already exists.');
         info('Use --force (-f) to overwrite.');
-        return 1; 
+        return 1;
       }
 
       if (result.overwritten) {
@@ -57,8 +57,7 @@ class InitCommand extends BaseCommand {
       info('Config written to: ${result.configPath}');
 
       return 0;
-    } 
-    catch (e) {
+    } catch (e) {
       error('Failed to initialize API Dash config: $e');
       return 1;
     }

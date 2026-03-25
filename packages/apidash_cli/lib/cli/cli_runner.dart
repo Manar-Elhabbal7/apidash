@@ -9,6 +9,7 @@ class CliRunner extends CommandRunner {
           'apidash',
           'API Dash CLI - AI-Powered API Client',
         ) {
+    //TODO: all commands will be added here
     addCommand(InitCommand());
     addCommand(RequestCommand());
     addCommand(HistoryCommand());
