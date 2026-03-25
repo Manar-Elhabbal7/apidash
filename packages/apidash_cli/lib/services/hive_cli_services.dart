@@ -27,14 +27,14 @@ class HiveHandler {
   }
 
   Future<void> setRequestModel(String id, Map<String, dynamic> json) async {
-  await _lazyBox.put(id, json);
-  final List<String> ids = getIds() ?? [];
-  
-  ids.removeWhere((e) => e == id);
-  ids.insert(0, id);
-  
-  await _metaBox.put(kHistoryBoxIds, jsonEncode(ids));
-}
+    await _lazyBox.put(id, json);
+    final List<String> ids = getIds() ?? [];
+
+    ids.removeWhere((e) => e == id);
+    ids.insert(0, id);
+
+    await _metaBox.put(kHistoryBoxIds, jsonEncode(ids));
+  }
 
   Future<Map<String, dynamic>?> getRequestModel(String id) async {
     final json = await _lazyBox.get(id);
@@ -60,7 +60,6 @@ class HiveHandler {
     if (raw is String) {
       ids = (jsonDecode(raw) as List).map((e) => e.toString()).toList();
     } else {
-      // handle old List format before the fix
       ids = (raw as List).map((e) => e.toString()).toList();
     }
     return ids.toSet().toList();

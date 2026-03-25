@@ -3,7 +3,7 @@ import 'package:apidash_cli/commands/init_command.dart';
 import 'package:apidash_cli/commands/request_command.dart';
 import 'package:args/command_runner.dart';
 
-class CliRunner extends CommandRunner<int> {
+class CliRunner extends CommandRunner {
   CliRunner()
       : super(
           'apidash',

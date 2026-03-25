@@ -28,11 +28,9 @@ class InitCommand extends BaseCommand {
 
   @override
   Future<int> run() async {
-    // force is never null because defaultsTo: false is set
     final force = argResults!['force'] as bool;
     final projectName = argResults?['name'] as String?;
 
-    // Validate project name if provided
     if (projectName != null && projectName.trim().isEmpty) {
       error('Project name cannot be empty.');
       return 1;
@@ -44,31 +42,24 @@ class InitCommand extends BaseCommand {
         force: force,
       );
 
-      // Config already exists and --force was not passed
       if (!result.created) {
         info('Configuration already exists.');
         info('Use --force (-f) to overwrite.');
-        return 1; // non-zero = nothing was done / blocked
+        return 1; 
       }
 
-      // Distinguish between a fresh init and a forced overwrite
       if (result.overwritten) {
         success('API Dash config overwritten successfully!');
       } else {
         success('API Dash initialized successfully!');
       }
 
-      // Optionally print where the config was written
-
       info('Config written to: ${result.configPath}');
 
       return 0;
-    } catch (e, stackTrace) {
-      error('Failed to initialize API Dash: $e');
-      // Only print stack trace in verbose/debug mode if your BaseCommand supports it
-      if (globalResults?['verbose'] == true) {
-        info(stackTrace.toString());
-      }
+    } 
+    catch (e) {
+      error('Failed to initialize API Dash config: $e');
       return 1;
     }
   }

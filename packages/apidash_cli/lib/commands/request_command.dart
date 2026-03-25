@@ -11,10 +11,12 @@ class RequestCommand extends BaseCommand {
   RequestCommand() {
     argParser
       ..addOption('workspace', abbr: 'w', help: 'Path to API Dash workspace')
-      ..addOption('output', abbr: 'o', defaultsTo: 'human', help: 'Output format: human or json')
+      ..addOption('output',
+          abbr: 'o', defaultsTo: 'human', help: 'Output format: human or json')
       ..addOption('name', help: 'Custom name for the request in history')
       ..addOption('body', help: 'Request body for POST/PUT/PATCH')
-      ..addMultiOption('header', abbr: 'H', help: 'Add header (can be used multiple times)');
+      ..addMultiOption('header',
+          abbr: 'H', help: 'Add header (can be used multiple times)');
   }
 
   @override
@@ -31,7 +33,7 @@ class RequestCommand extends BaseCommand {
       return 1;
     }
 
-    final methodStr = args[0].toLowerCase();
+    final methodStr = args[0].toLowerCase(); // for case-insensitive matching
     final url = args[1];
     final workspace = argResults!['workspace'] as String? ?? '.apidash';
     final outputFormat = argResults!['output'] as String;
@@ -60,7 +62,6 @@ class RequestCommand extends BaseCommand {
       }
     }
 
-    // Initialize Hive and find existing ID BEFORE sending the request
     await hiveHandler.initWorkspaceStore(workspace);
     final currentIds = (hiveHandler.getIds() ?? []).toSet().toList();
     String? existingId;
@@ -76,7 +77,6 @@ class RequestCommand extends BaseCommand {
     final start = DateTime.now();
 
     try {
-      // Execute request
       final response = await httpService.sendRequest(
         method: method,
         url: url,
@@ -85,7 +85,7 @@ class RequestCommand extends BaseCommand {
       );
       final duration = DateTime.now().difference(start);
 
-      // Check for media types
+      // check the type of response based on content-type header
       final contentType = response.headers
           ?.firstWhere(
             (h) => h.name.toLowerCase() == 'content-type',
@@ -109,7 +109,7 @@ class RequestCommand extends BaseCommand {
             '${Directory.systemTemp.path}/apidash_${DateTime.now().millisecondsSinceEpoch}.$extension');
         await tempFile.writeAsBytes(response.bodyBytes!);
 
-        // Print JSON status and info
+        // Print JSON output with temp file path for media responses
         const encoder = JsonEncoder.withIndent('  ');
         print(encoder.convert({
           'status': response.statusCode,
@@ -118,7 +118,7 @@ class RequestCommand extends BaseCommand {
           'temp_file': tempFile.path,
         }));
 
-        // Open file
+        // Open file on supported platforms (Linux, macOS, Windows)
         if (Platform.isLinux) {
           await Process.run('xdg-open', [tempFile.path]);
         } else if (Platform.isMacOS) {

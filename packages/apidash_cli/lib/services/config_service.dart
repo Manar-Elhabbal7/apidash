@@ -13,7 +13,7 @@ class InitResult {
   const InitResult({
     required this.configPath,
     required this.created,
-    this.overwritten = false, 
+    this.overwritten = false,
   });
 
   final String configPath;
@@ -38,7 +38,7 @@ class ConfigService {
     if (alreadyExists && !force) {
       return InitResult(
         configPath: configFile.path,
-        created: false, 
+        created: false,
         overwritten: false,
       );
     }
@@ -76,7 +76,7 @@ class ConfigService {
     return InitResult(
       configPath: configFile.path,
       created: true,
-      overwritten: alreadyExists, 
+      overwritten: alreadyExists,
     );
   }
 }

@@ -121,29 +121,29 @@ void main() {
   });
 
   test('detect race condition in setRequestModel', () async {
-  await hiveHandler.initWorkspaceStore(tempDir.path);
+    await hiveHandler.initWorkspaceStore(tempDir.path);
 
-  final id = 'race_test';
+    final id = 'race_test';
 
-  final request = RequestModel(
-    id: id,
-    name: 'Race Test',
-    url: 'https://api.example.com/race',
-    method: RequestMethod.get,
-    response: ResponseModel(statusCode: 200, body: 'OK'),
-  );
+    final request = RequestModel(
+      id: id,
+      name: 'Race Test',
+      url: 'https://api.example.com/race',
+      method: RequestMethod.get,
+      response: ResponseModel(statusCode: 200, body: 'OK'),
+    );
 
-  await Future.wait([
-    hiveHandler.setRequestModel(id, request.toJson()),
-    hiveHandler.setRequestModel(id, request.toJson()),
-  ]);
+    await Future.wait([
+      hiveHandler.setRequestModel(id, request.toJson()),
+      hiveHandler.setRequestModel(id, request.toJson()),
+    ]);
 
-  final ids = hiveHandler.getIds();
+    final ids = hiveHandler.getIds();
 
-  print('RACE IDS: $ids');
+    print('RACE IDS: $ids');
 
-  expect(ids!.where((e) => e == id).length, 1);
+    expect(ids!.where((e) => e == id).length, 1);
 
-  await hiveHandler.close();
-});
+    await hiveHandler.close();
+  });
 }

@@ -3,11 +3,14 @@ import '../cli/base_command.dart';
 
 class HistoryCommand extends BaseCommand {
   HistoryCommand() {
+    //TODO - add option to export history to a file
+    //TODO - The history should be sync with the GUI    
+    
     argParser
-      ..addOption('workspace', abbr: 'w', help: 'Path to API Dash workspace')
-      ..addOption('limit', abbr: 'l', help: 'Limit the number of history items')
-      ..addFlag('clear', help: 'Clear all request history', negatable: false)
-      ..addOption('delete', help: 'Delete a specific request by ID');
+      ..addOption('workspace', abbr: 'w', help: 'specify a workspace (defaults to .apidash)')
+      ..addOption('limit', abbr: 'l', help: 'show only the last n requests')
+      ..addFlag('clear', help: 'clear all the history', negatable: false)
+      ..addOption('delete', help: 'Delete a request by id');
   }
 
   @override
@@ -25,7 +28,7 @@ class HistoryCommand extends BaseCommand {
 
     await hiveHandler.initWorkspaceStore(workspace);
 
-    // Clean up duplicate IDs in index if any
+    // Ensure unique IDs in history
     final ids = hiveHandler.getIds() ?? [];
     final uniqueIds = ids.toSet().toList();
     if (ids.length != uniqueIds.length) {
