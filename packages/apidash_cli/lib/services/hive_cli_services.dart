@@ -12,10 +12,17 @@ class HiveHandler {
 
   Future<void> initWorkspaceStore(String path) async {
     if (_initialized) return;
-    Hive.init(path);
-    _metaBox = await Hive.openBox(kHistoryMetaBox);
-    _lazyBox = await Hive.openLazyBox(kHistoryLazyBox);
-    _initialized = true;
+    try {
+      Hive.init(path);
+      _metaBox = await Hive.openBox(kHistoryMetaBox);
+      _lazyBox = await Hive.openLazyBox(kHistoryLazyBox);
+      _initialized = true;
+    } catch (e) {
+      if (e.toString().contains('lock failed')) {
+        throw 'Workspace is currently locked by another process. Please ensure no other instance of API Dash is using this workspace.';
+      }
+      rethrow;
+    }
   }
 
   Future<void> close() async {

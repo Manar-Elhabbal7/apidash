@@ -1,5 +1,5 @@
 name: apidash_mcp
-description: A sample command-line application.
+description: Model Context Protocol (MCP) server for ApiDash.
 version: 1.0.0
 # repository: https://github.com/my_org/my_repo
 
@@ -8,8 +8,13 @@ environment:
 
 resolution: workspace
 
+executables:
+  apidash_mcp: mcp
+
 # Add regular dependencies here.
 dependencies:
+  apidash_cli: any
+  dart_mcp: ^0.5.0
   mcp_dart: ^2.1.0
   path: ^1.9.0
 
